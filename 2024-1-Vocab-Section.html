@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2024-2 2級 語彙完全制覇 54問</title>
+    <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #fce4ec; 
+            --primary-pink: #d81b60; 
+            --text-black: #212121; 
+            --gray-dark: #616161; 
+            --white: #ffffff;
+            --error-red: #e91e63;
+            --success-green: #4caf50;
+            --base-font: 'Andika', "Hiragino Maru Gothic ProN", sans-serif;
+        }
+
+        body {
+            font-family: var(--base-font);
+            background-color: var(--bg-color);
+            color: var(--text-black);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-pink);
+            color: var(--white);
+            width: 100%;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .container {
+            max-width: 700px;
+            width: 90%;
+            margin: 20px 0;
+            background: var(--white);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 2px solid var(--gray-dark);
+        }
+
+        .progress-bar { font-size: 1rem; color: var(--primary-pink); margin-bottom: 15px; font-weight: bold; }
+        .word-display { font-size: 3rem; font-weight: 700; color: var(--text-black); margin: 10px 0 30px 0; letter-spacing: 1px; }
+        .choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .choice-btn {
+            background: var(--white);
+            border: 2px solid var(--gray-dark);
+            padding: 18px 10px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--base-font);
+            color: var(--text-black);
+        }
+
+        .choice-btn:hover { background-color: #f5f5f5; border-color: var(--primary-pink); }
+        .choice-btn.wrong { background-color: #ffcdd2; border-color: var(--error-red); color: var(--error-red); animation: shake 0.3s; }
+
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+        #result-screen { display: none; }
+        .score-num { font-size: 3.5rem; color: var(--primary-pink); font-weight: bold; }
+        .mistake-list { text-align: left; background: #fafafa; padding: 15px; border-radius: 10px; margin-top: 20px; max-height: 250px; overflow-y: auto; border: 1px solid var(--gray-dark); }
+        .mistake-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        
+        .action-btn { 
+            background-color: var(--primary-pink); 
+            color: white; 
+            border: none; 
+            padding: 15px 40px; 
+            border-radius: 40px; 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 20px; 
+            width: 100%; 
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>2024-2 2級 語彙完全制覇</h1>
+</header>
+
+<div class="container" id="quiz-screen">
+    <div class="progress-bar" id="progress">1 / 54</div>
+    <div class="word-display" id="word-text">Loading...</div>
+    <div class="choices-grid" id="choices-container"></div>
+    <div id="feedback" style="margin-top:20px; height: 1.2em; font-weight: bold;"></div>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>トレーニング終了！</h2>
+    <div>一度で正解：<span class="score-num" id="final-score">0</span> / <span id="total-q">54</span>問</div>
+    <div id="mistake-container" style="display:none;">
+        <h3 style="color: var(--error-red); margin-top:25px;">要復習リスト</h3>
+        <div class="mistake-list" id="mistake-list"></div>
+    </div>
+    <button class="action-btn" onclick="sendEmail()">Tamaki先生に結果を送信</button>
+    <button class="action-btn" style="background-color: var(--gray-dark);" onclick="location.reload()">もう一度挑戦する</button>
+</div>
+
+<script>
+const vocabList = [
+    // --- Nouns ---
+    {w:"factors", a:"要因", c:["工場","結果","利益"]},
+    {w:"manuscripts", a:"原稿", c:["手順","台本","案内図"]},
+    {w:"victims", a:"犠牲者", c:["犯人","見物人","案内人"]},
+    {w:"palaces", a:"宮殿", c:["広場","劇場","商店"]},
+    {w:"behavior", a:"行動・ふるまい", c:["性格","外見","秘密"]},
+    {w:"composition", a:"構成・作文", c:["比較","競争","分解"]},
+    {w:"attendance", a:"出席", c:["注目","練習","準備"]},
+    {w:"liberty", a:"自由", c:["平等","平和","権利"]},
+    {w:"achievement", a:"達成・業績", c:["努力","報酬","計画"]},
+    {w:"requirement", a:"必要条件", c:["依頼","許可","例外"]},
+    {w:"combination", a:"組み合わせ", c:["協力","調整","一致"]},
+    {w:"donation", a:"寄付", c:["貯金","投資","貸与"]},
+    {w:"doorway", a:"出入り口", c:["廊下","階段","窓口"]},
+    {w:"rooftop", a:"屋上", c:["天井","最上階","地下"]},
+    {w:"fireplace", a:"暖炉", c:["台所","煙突","倉庫"]},
+    
+    // --- Adverbs / Prepositions ---
+    {w:"underneath", a:"〜の下に", c:["〜のそばに","〜の間に","〜の向こうに"]},
+    {w:"upstairs", a:"上の階に", c:["外側に","近くに","反対側に"]},
+    {w:"definitely", a:"絶対に", c:["最近","おそらく","以前に"]},
+    {w:"downhill", a:"下り坂に", c:["徐々に","急激に","真っ直ぐに"]},
+    {w:"correctly", a:"正確に", c:["丁寧に","迅速に","静かに"]},
+    {w:"eventually", a:"結局・ついに", c:["突然","一時的に","すぐに"]},
+    {w:"obviously", a:"明らかに", c:["非常に","確実に","おそらく"]},
+
+    // --- Verbs ---
+    {w:"cure", a:"治療する", c:["看護する","予防する","和らげる"]},
+    {w:"grant", a:"与える・認める", c:["約束する","供給する","保証する"]},
+    {w:"flee", a:"逃げる", c:["避ける","去る","隠れる"]},
+    {w:"create", a:"創造する", c:["模倣する","発明する","開始する"]},
+    {w:"reduce", a:"減らす", c:["制限する","削除する","整理する"]},
+    {w:"heal", a:"治す", c:["守る","休める","助ける"]},
+    {w:"grasp", a:"理解する・掴む", c:["学ぶ","探す","見つける"]},
+    {w:"frighten", a:"怖がらせる", c:["驚かせる","怒らせる","悲しませる"]},
+    {w:"convert", a:"変換する", c:["交換する","保存する","整理する"]},
+    {w:"derive", a:"由来する", c:["依存する","生じる","関係する"]},
+    {w:"filter", a:"ろ過する", c:["選別する","洗浄する","排水する"]},
+
+    // --- Idioms / Phrases ---
+    {w:"for instance", a:"例えば", c:["実際に","特に","具体的に"]},
+    {w:"at random", a:"無作為に", c:["自由に","偶然に","わざと"]},
+    {w:"in exchange", a:"引き換えに", c:["代わりとして","お返しに","一緒に"]},
+    {w:"on purpose", a:"わざと", c:["注意深く","急いで","熱心に"]},
+    {w:"as a general rule", a:"概して・原則として", c:["普通は","伝統的に","一般的に"]},
+    {w:"in the long run", a:"長期的には", c:["短期的には","一瞬で","これからは"]},
+    {w:"over and over", a:"何度も", c:["絶えず","頻繁に","たまに"]},
+    {w:"on the contrary", a:"逆に", c:["実際には","一方で","例えば"]},
+    {w:"up until now", a:"今までのところ", c:["最近まで","これからは","いつの日か"]},
+    {w:"up in the air", a:"未決定で", c:["準備中で","中断して","盛り上がって"]},
+    {w:"at the bottom", a:"一番下に", c:["背後に","根本的に","真ん中に"]},
+    {w:"keep track of", a:"〜を記録する・追う", c:["〜を管理する","〜を見守る","〜を忘れる"]},
+    {w:"make sense of", a:"〜を理解する", c:["〜に納得する","〜を説明する","〜を信じる"]},
+    {w:"keep pace with", a:"〜に遅れずついていく", c:["〜に協力する","〜を追い越す","〜から離れる"]},
+    {w:"staring at", a:"〜をじっと見る", c:["〜を観察する","〜に気づく","〜を見渡す"]},
+    {w:"passing on", a:"〜を伝える", c:["〜を手渡す","〜を広める","〜を残す"]},
+    {w:"on good terms", a:"良い関係で", c:["高い場所で","厳しい条件で","短い期間で"]},
+    {w:"by no means", a:"決して〜ない", c:["手段を選ばず","平均的に","今のところ"]},
+    {w:"out of hand", a:"手に負えない", c:["手元にある","すぐに手に入る","片手で"]},
+    {w:"had second thoughts", a:"考え直す・二の足を踏む", c:["二番目に考える","すぐに思いつく","後悔する"]},
+    {w:"make ends meet", a:"やりくりする", c:["終わりにする","約束を守る","会議に出る"]}
+];
+
+
+let currentIndex = 0;
+let firstTryCorrectCount = 0;
+let isFirstTry = true;
+let mistakes = [];
+
+document.getElementById('total-q').textContent = vocabList.length;
+
+function loadQuestion() {
+    const current = vocabList[currentIndex];
+    document.getElementById('progress').textContent = `${currentIndex + 1} / ${vocabList.length}`;
+    document.getElementById('word-text').textContent = current.w;
+    document.getElementById('feedback').textContent = "";
+    
+    const container = document.getElementById('choices-container');
+    container.innerHTML = '';
+    isFirstTry = true;
+
+    const choices = [current.a, ...current.c].sort(() => Math.random() - 0.5);
+
+    choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = choice;
+        btn.onclick = () => checkAnswer(choice, current.a, btn);
+        container.appendChild(btn);
+    });
+}
+
+function checkAnswer(selected, correct, btn) {
+    if (selected === correct) {
+        if (isFirstTry) {
+            firstTryCorrectCount++;
+            document.getElementById('feedback').style.color = "var(--success-green)";
+            document.getElementById('feedback').textContent = "Excellent!";
+        }
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex < vocabList.length) { loadQuestion(); } else { showResult(); }
+        }, 600);
+    } else {
+        if (isFirstTry) {
+            mistakes.push({w: vocabList[currentIndex].w, a: vocabList[currentIndex].a});
+            isFirstTry = false;
+        }
+        btn.classList.add('wrong');
+        document.getElementById('feedback').style.color = "var(--error-red)";
+        document.getElementById('feedback').textContent = "Try again!";
+    }
+}
+
+function showResult() {
+    document.getElementById('quiz-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    document.getElementById('final-score').textContent = firstTryCorrectCount;
+    if (mistakes.length > 0) {
+        document.getElementById('mistake-container').style.display = 'block';
+        document.getElementById('mistake-list').innerHTML = mistakes.map(m => `
+            <div class="mistake-item"><strong>${m.w}</strong><span>${m.a}</span></div>
+        `).join('');
+    }
+}
+
+function sendEmail() {
+    const teacherEmail = "tamaki@eigostudio-stepforward.com";
+    const subject = encodeURIComponent("2024-2 2級 語彙トレーニング結果");
+    let mistakeText = mistakes.length > 0 
+        ? "\n\n■要復習リスト:\n" + mistakes.map(m => `・${m.w} (${m.a})`).join("\n")
+        : "\n\n完璧です！全問一発正解でした。";
+    const body = encodeURIComponent(`Tamaki先生へ\n\n英検2級の過去問（2024-1）に基づく語彙アクティビティを完了しました。\n\n結果: ${vocabList.length}問中 ${firstTryCorrectCount} 問を一発正解。${mistakeText}`);
+    window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+}
+
+window.onload = loadQuestion;
+</script>
+</body>
+</html>
