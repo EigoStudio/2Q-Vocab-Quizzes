@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2級 2024-2 2A Coffee Culture</title>
+    <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #e3f2fd; 
+            --primary-blue: #1976d2; 
+            --text-black: #212121; 
+            --gray-dark: #616161; 
+            --white: #ffffff;
+            --error-red: #e91e63;
+            --success-green: #4caf50;
+            --base-font: 'Andika', "Hiragino Maru Gothic ProN", sans-serif;
+        }
+
+        body {
+            font-family: var(--base-font);
+            background-color: var(--bg-color);
+            color: var(--text-black);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-blue);
+            color: var(--white);
+            width: 100%;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .container {
+            max-width: 700px;
+            width: 90%;
+            margin: 20px 0;
+            background: var(--white);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 2px solid var(--gray-dark);
+        }
+
+        .progress-bar { font-size: 1rem; color: var(--primary-blue); margin-bottom: 15px; font-weight: bold; }
+        .word-display { font-size: 2.5rem; font-weight: 700; color: var(--text-black); margin: 10px 0 30px 0; letter-spacing: 1px; word-break: break-word; }
+        .choices-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        
+        /* PC用 2カラム */
+        @media (min-width: 600px) {
+            .choices-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        .choice-btn {
+            background: var(--white);
+            border: 2px solid var(--gray-dark);
+            padding: 15px 10px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--base-font);
+        }
+
+        .choice-btn:hover { background-color: #f5f5f5; border-color: var(--primary-blue); }
+        .choice-btn.wrong { background-color: #ffcdd2; border-color: var(--error-red); color: var(--error-red); animation: shake 0.3s; }
+
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+        #result-screen { display: none; }
+        .score-num { font-size: 3.5rem; color: var(--primary-blue); font-weight: bold; }
+        .mistake-list { text-align: left; background: #fafafa; padding: 15px; border-radius: 10px; margin-top: 20px; max-height: 250px; overflow-y: auto; border: 1px solid var(--gray-dark); }
+        .mistake-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        
+        .action-btn { 
+            background-color: var(--primary-blue); 
+            color: white; 
+            border: none; 
+            padding: 15px 40px; 
+            border-radius: 40px; 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 20px; 
+            width: 100%; 
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>2級 2024-2 2A Coffee Culture</h1>
+</header>
+
+<div class="container" id="quiz-screen">
+    <div class="progress-bar" id="progress">1 / 39</div>
+    <div class="word-display" id="word-text">Loading...</div>
+    <div class="choices-grid" id="choices-container"></div>
+    <div id="feedback" style="margin-top:20px; height: 1.2em; font-weight: bold;"></div>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>トレーニング終了！</h2>
+    <div>一度で正解：<span class="score-num" id="final-score">0</span> / 39問</div>
+    <div id="mistake-container" style="display:none;">
+        <h3 style="color: var(--error-red); margin-top:25px;">要復習リスト</h3>
+        <div class="mistake-list" id="mistake-list"></div>
+    </div>
+    <button class="action-btn" onclick="sendEmail()">Tamaki先生に結果を送信</button>
+    <button class="action-btn" style="background-color: var(--gray-dark);" onclick="location.reload()">もう一度挑戦する</button>
+</div>
+
+<script>
+const vocabList = [
+    {w:"for centuries", a:"何世紀もの間", c:["数十年の間", "最近の数年間", "一瞬のうちに"]},
+    {w:"tradition", a:"伝統", c:["流行", "法律", "儀式"]},
+    {w:"light meal", a:"軽食", c:["夕食", "主菜", "間食"]},
+    {w:"main attraction", a:"主な魅力", c:["主な欠点", "主な目的", "主な原因"]},
+    {w:"opportunity", a:"機会", c:["能力", "責任", "運命"]},
+    {w:"debate", a:"討論する", c:["拒絶する", "推測する", "洗練する"]},
+    {w:"discuss", a:"話し合う", c:["不平を言う", "調査する", "報告する"]},
+    {w:"character", a:"特徴・性格", c:["評判", "身分", "外見"]},
+    {w:"depending on", a:"〜に応じて", c:["〜にもかかわらず", "〜の代わりに", "〜に加えて"]},
+    {w:"location", a:"場所・位置", c:["距離", "目的地", "近隣"]},
+    {w:"equal", a:"平等な", c:["正式な", "優秀な", "偏った"]},
+    {w:"though", a:"〜だけれども", c:["〜なので", "〜の間に", "〜もしない限り"]},
+    {w:"gatherings", a:"集まり", c:["職業", "収穫", "展示"]},
+    {w:"include", a:"含める", c:["除く", "無視する", "選ぶ"]},
+    {w:"in other words", a:"言い換えれば", c:["それどころか", "要するに", "実際には"]},
+    {w:"instead", a:"代わりに", c:["特に", "直ちに", "結局"]},
+    {w:"on the other hand", a:"他方では", c:["同様に", "その結果", "さらに"]},
+    {w:"unfortunately", a:"残念ながら", c:["幸運にも", "明らかに", "突然に"]},
+    {w:"the rich and powerful", a:"富裕層や権力者", c:["労働者層", "起業家や政治家", "一般市民"]},
+    {w:"work long hours", a:"長時間働く", c:["時給で働く", "在宅で働く", "専門職で働く"]},
+    {w:"variety of backgrounds", a:"多様な経歴", c:["共通の趣味", "高度な教育", "複雑な事情"]},
+    {w:"business owner", a:"経営者", c:["公務員", "会社員", "自由業者"]},
+    {w:"politician", a:"政治家", c:["外交官", "事務員", "弁護士"]},
+    {w:"play a role in", a:"〜で役割を果たす", c:["〜で規則を決める", "〜で問題を起こす", "〜で成功を収める"]},
+    {w:"politics", a:"政治", c:["経済", "宗教", "哲学"]},
+    {w:"of the time", a:"当時の", c:["最新の", "将来の", "永遠の"]},
+    {w:"insurance", a:"保険", c:["貯金", "年金", "税金"]},
+    {w:"challenges", a:"課題・困難", c:["機会", "報酬", "提案"]},
+    {w:"shut down", a:"閉鎖する", c:["設立する", "拡張する", "買収する"]},
+    {w:"due to", a:"〜のために(理由)", c:["〜に加えて", "〜と同様に", "〜に向かって"]},
+    {w:"worries", a:"懸念・心配", c:["期待", "不満", "決断"]},
+    {w:"still", a:"それでもなお", c:["もはや", "かつて", "ついに"]},
+    {w:"over time", a:"時が経つにつれて", c:["時間通りに", "間に合って", "何度も"]},
+    {w:"social trend", a:"社会傾向", c:["社会問題", "社会保障", "社会構造"]},
+    {w:"nowadays", a:"今日では", c:["かつては", "将来は", "直ちに"]},
+    {w:"destroy", a:"破壊する", c:["構築する", "維持する", "改善する"]},
+    {w:"become less common", a:"一般的ではなくなる", c:["より重要になる", "急速に広まる", "価値が上がる"]},
+    {w:"original purpose", a:"本来の目的", c:["最終的な目標", "一時的な意図", "個人的な見解"]},
+    {w:"global market", a:"世界市場", c:["国内需要", "地方経済", "株式市場"]}
+];
+
+let currentIndex = 0;
+let firstTryCorrectCount = 0;
+let isFirstTry = true;
+let mistakes = [];
+
+function loadQuestion() {
+    const current = vocabList[currentIndex];
+    document.getElementById('progress').textContent = `${currentIndex + 1} / ${vocabList.length}`;
+    document.getElementById('word-text').textContent = current.w;
+    document.getElementById('feedback').textContent = "";
+    
+    const container = document.getElementById('choices-container');
+    container.innerHTML = '';
+    isFirstTry = true;
+
+    const choices = [current.a, ...current.c].sort(() => Math.random() - 0.5);
+
+    choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = choice;
+        btn.onclick = () => checkAnswer(choice, current.a, btn);
+        container.appendChild(btn);
+    });
+}
+
+function checkAnswer(selected, correct, btn) {
+    if (selected === correct) {
+        if (isFirstTry) {
+            firstTryCorrectCount++;
+            document.getElementById('feedback').style.color = "var(--success-green)";
+            document.getElementById('feedback').textContent = "Great job!";
+        }
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex < vocabList.length) { loadQuestion(); } else { showResult(); }
+        }, 500);
+    } else {
+        if (isFirstTry) {
+            mistakes.push({w: vocabList[currentIndex].w, a: vocabList[currentIndex].a});
+            isFirstTry = false;
+        }
+        btn.classList.add('wrong');
+        document.getElementById('feedback').style.color = "var(--error-red)";
+        document.getElementById('feedback').textContent = "Keep trying!";
+    }
+}
+
+function showResult() {
+    document.getElementById('quiz-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    document.getElementById('final-score').textContent = firstTryCorrectCount;
+    if (mistakes.length > 0) {
+        document.getElementById('mistake-container').style.display = 'block';
+        document.getElementById('mistake-list').innerHTML = mistakes.map(m => `
+            <div class="mistake-item"><strong>${m.w}</strong><span>${m.a}</span></div>
+        `).join('');
+    }
+}
+
+function sendEmail() {
+    const teacherEmail = "tamaki@eigostudio-stepforward.com";
+    const subject = encodeURIComponent("2級 2024-2 2A Coffee Culture 結果報告");
+    let mistakeText = mistakes.length > 0 
+        ? "\n\n■要復習リスト:\n" + mistakes.map(m => `・${m.w} (${m.a})`).join("\n")
+        : "\n\n完璧です！全問一発正解でした。";
+    const body = encodeURIComponent(`Tamaki先生へ\n\n英検2級 読解2A「Coffee Culture」の語彙クイズ（全39問）を完了しました。\n\n結果: ${vocabList.length}問中 ${firstTryCorrectCount} 問を一発正解。${mistakeText}`);
+    window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+}
+
+window.onload = loadQuestion;
+</script>
+</body>
+</html>
