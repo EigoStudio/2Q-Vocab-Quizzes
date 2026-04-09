@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2級 2024-2 3A Your Membership</title>
+    <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #fff3e0; 
+            --primary-orange: #f57c00; 
+            --text-black: #212121; 
+            --gray-dark: #616161; 
+            --white: #ffffff;
+            --error-red: #e91e63;
+            --success-green: #4caf50;
+            --base-font: 'Andika', "Hiragino Maru Gothic ProN", sans-serif;
+        }
+
+        body {
+            font-family: var(--base-font);
+            background-color: var(--bg-color);
+            color: var(--text-black);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-orange);
+            color: var(--white);
+            width: 100%;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .container {
+            max-width: 700px;
+            width: 90%;
+            margin: 20px 0;
+            background: var(--white);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 2px solid var(--gray-dark);
+        }
+
+        .progress-bar { font-size: 1rem; color: var(--primary-orange); margin-bottom: 15px; font-weight: bold; }
+        
+        .word-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .word-display { font-size: 2.2rem; font-weight: 700; color: var(--text-black); letter-spacing: 1px; word-break: break-word; }
+        
+        .speaker-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 2rem;
+            color: var(--primary-orange);
+            padding: 0;
+            line-height: 1;
+        }
+
+        .choices-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        
+        @media (min-width: 600px) {
+            .choices-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        .choice-btn {
+            background: var(--white);
+            border: 2px solid var(--gray-dark);
+            padding: 15px 10px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--base-font);
+        }
+
+        .choice-btn:hover { background-color: #f5f5f5; border-color: var(--primary-orange); }
+        .choice-btn.wrong { background-color: #ffcdd2; border-color: var(--error-red); color: var(--error-red); animation: shake 0.3s; }
+
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+        #result-screen { display: none; }
+        .score-num { font-size: 3.5rem; color: var(--primary-orange); font-weight: bold; }
+        .mistake-list { text-align: left; background: #fafafa; padding: 15px; border-radius: 10px; margin-top: 20px; max-height: 250px; overflow-y: auto; border: 1px solid var(--gray-dark); }
+        .mistake-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        
+        .action-btn { 
+            background-color: var(--primary-orange); 
+            color: white; 
+            border: none; 
+            padding: 15px 40px; 
+            border-radius: 40px; 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            width: 100%; 
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>2級 2024-2 3A Your Membership</h1>
+</header>
+
+<div class="container" id="quiz-screen">
+    <div class="progress-bar" id="progress">1 / 37</div>
+    <div class="word-area">
+        <div class="word-display" id="word-text">Loading...</div>
+        <button class="speaker-btn" onclick="speakWord()">🔊</button>
+    </div>
+    <div class="choices-grid" id="choices-container"></div>
+    <div id="feedback" style="margin-top:20px; height: 1.2em; font-weight: bold;"></div>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>トレーニング終了！</h2>
+    <div>一度で正解：<span class="score-num" id="final-score">0</span> / 37問</div>
+    <div id="mistake-container" style="display:none;">
+        <h3 style="color: var(--error-red); margin-top:25px;">要復習リスト</h3>
+        <div class="mistake-list" id="mistake-list"></div>
+    </div>
+    <button class="action-btn" onclick="sendEmail()">Tamaki先生に結果を送信</button>
+    <button class="action-btn" style="background-color: var(--gray-dark);" onclick="location.reload()">もう一度挑戦する</button>
+</div>
+
+<script>
+const vocabList = [
+    {w:"customer service", a:"顧客対応", c:["清掃点検", "広告宣伝", "商品開発"]},
+    {w:"manager", a:"責任者", c:["新人", "顧客", "研修"]},
+    {w:"say congratulations on", a:"お祝いを言う", c:["謝罪をする", "許可を得る", "約束をする"]},
+    {w:"add", a:"加える", c:["消す", "選ぶ", "売る"]},
+    {w:"fitness experience", a:"運動体験", c:["食事制限", "睡眠不足", "読書習慣"]},
+    {w:"even better", a:"さらに良い", c:["かなり悪い", "以前と同じ", "あまりない"]},
+    {w:"equipment", a:"備品", c:["規則", "料金", "場所"]},
+    {w:"addition", a:"追加", c:["削減", "移動", "故障"]},
+    {w:"in the area", a:"この地域で", c:["別の国で", "学校内で", "家庭内で"]},
+    {w:"session", a:"時間", c:["料金", "場所", "道具"]},
+    {w:"invite", a:"招待する", c:["拒否する", "修理する", "記録する"]},
+    {w:"seminar", a:"講習会", c:["競技会", "展覧会", "演奏会"]},
+    {w:"sign up for", a:"申し込む", c:["片付ける", "諦める", "見つける"]},
+    {w:"follow the instructions", a:"指示に従う", c:["計画を立てる", "規則を変える", "意見を言う"]},
+    {w:"further", a:"さらに", c:["すぐに", "たまに", "ついに"]},
+    {w:"promote good health", a:"健康を促す", c:["病気を治す", "薬を売る", "体を休める"]},
+    {w:"feature", a:"特集", c:["広告", "欠陥", "苦情"]},
+    {w:"subject", a:"対象", c:["理由", "結果", "原因"]},
+    {w:"front desk", a:"受付", c:["更衣室", "駐車場", "休憩所"]},
+    {w:"feedback on", a:"意見", c:["料金", "契約", "案内"]},
+    {w:"reply to", a:"返信する", c:["無視する", "転送する", "削除する"]},
+    {w:"finally", a:"最後に", c:["最初に", "突然に", "確かに"]},
+    {w:"discount", a:"割引", c:["増額", "全額", "無料"]},
+    {w:"kind regards", a:"敬具", c:["親愛なる", "お元気で", "さようなら"]},
+    {w:"congratulate", a:"祝う", c:["励ます", "疑う", "責める"]},
+    {w:"renew", a:"更新する", c:["解約する", "放置する", "点検する"]},
+    {w:"inform", a:"知らせる", c:["隠す", "尋ねる", "考える"]},
+    {w:"opening of", a:"開店", c:["閉店", "移転", "改築"]},
+    {w:"arrange", a:"手配する", c:["壊す", "断る", "忘れる"]},
+    {w:"be in a feature", a:"特集に出る", c:["雑誌を買う", "広告を出す", "記事を書く"]},
+    {w:"learn about", a:"～を知る", c:["～を売る", "～を変える", "～を隠す"]},
+    {w:"participate", a:"参加する", c:["欠席する", "開催する", "延期する"]},
+    {w:"suggest", a:"提案する", c:["命令する", "反対する", "確信する"]},
+    {w:"register for", a:"登録する", c:["削除する", "利用する", "交換する"]},
+    {w:"agree", a:"同意する", c:["拒む", "迷う", "驚く"]},
+    {w:"purchase", a:"購入する", c:["販売する", "修理する", "製作する"]},
+    {w:"introduce", a:"紹介する", c:["批判する", "調査する", "雇用する"]}
+];
+
+let currentIndex = 0;
+let firstTryCorrectCount = 0;
+let isFirstTry = true;
+let mistakes = [];
+
+function loadQuestion() {
+    const current = vocabList[currentIndex];
+    document.getElementById('progress').textContent = `${currentIndex + 1} / ${vocabList.length}`;
+    document.getElementById('word-text').textContent = current.w;
+    document.getElementById('feedback').textContent = "";
+    
+    const container = document.getElementById('choices-container');
+    container.innerHTML = '';
+    isFirstTry = true;
+
+    const choices = [current.a, ...current.c].sort(() => Math.random() - 0.5);
+
+    choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = choice;
+        btn.onclick = () => checkAnswer(choice, current.a, btn);
+        container.appendChild(btn);
+    });
+}
+
+function checkAnswer(selected, correct, btn) {
+    if (selected === correct) {
+        if (isFirstTry) {
+            firstTryCorrectCount++;
+            document.getElementById('feedback').style.color = "var(--success-green)";
+            document.getElementById('feedback').textContent = "Great!";
+        }
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex < vocabList.length) { loadQuestion(); } else { showResult(); }
+        }, 500);
+    } else {
+        if (isFirstTry) {
+            mistakes.push({w: vocabList[currentIndex].w, a: vocabList[currentIndex].a});
+            isFirstTry = false;
+        }
+        btn.classList.add('wrong');
+        document.getElementById('feedback').style.color = "var(--error-red)";
+        document.getElementById('feedback').textContent = "Keep going!";
+    }
+}
+
+function speakWord() {
+    const word = vocabList[currentIndex].w;
+    const uttr = new SpeechSynthesisUtterance(word);
+    uttr.lang = 'en-US';
+    uttr.rate = 0.9;
+    window.speechSynthesis.speak(uttr);
+}
+
+function showResult() {
+    document.getElementById('quiz-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    document.getElementById('final-score').textContent = firstTryCorrectCount;
+    if (mistakes.length > 0) {
+        document.getElementById('mistake-container').style.display = 'block';
+        document.getElementById('mistake-list').innerHTML = mistakes.map(m => `
+            <div class="mistake-item"><strong>${m.w}</strong><span>${m.a}</span></div>
+        `).join('');
+    }
+}
+
+function sendEmail() {
+    const teacherEmail = "tamaki@eigostudio-stepforward.com";
+    const subject = encodeURIComponent("2級 2024-2 3A Your Membership 結果報告");
+    let mistakeText = mistakes.length > 0 
+        ? "\n\n■要復習リスト:\n" + mistakes.map(m => `・${m.w} (${m.a})`).join("\n")
+        : "\n\n完璧でした！";
+    const body = encodeURIComponent(`Tamaki先生へ\n\n英検2級 読解3A「Your Membership」の語彙クイズ（全37問）を完了しました。\n\n結果: ${vocabList.length}問中 ${firstTryCorrectCount} 問を一発正解。${mistakeText}`);
+    window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+}
+
+window.onload = loadQuestion;
+</script>
+</body>
+</html>

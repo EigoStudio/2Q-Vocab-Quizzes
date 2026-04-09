@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2級 2024-2 3B Bonobos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #e8f5e9; 
+            --primary-green: #2e7d32; 
+            --text-black: #212121; 
+            --gray-dark: #616161; 
+            --white: #ffffff;
+            --error-red: #e91e63;
+            --success-green: #4caf50;
+            --base-font: 'Andika', "Hiragino Maru Gothic ProN", sans-serif;
+        }
+
+        body {
+            font-family: var(--base-font);
+            background-color: var(--bg-color);
+            color: var(--text-black);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-green);
+            color: var(--white);
+            width: 100%;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .container {
+            max-width: 700px;
+            width: 90%;
+            margin: 20px 0;
+            background: var(--white);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 2px solid var(--gray-dark);
+        }
+
+        .progress-bar { font-size: 1rem; color: var(--primary-green); margin-bottom: 15px; font-weight: bold; }
+        
+        .word-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .word-display { font-size: 2.2rem; font-weight: 700; color: var(--text-black); letter-spacing: 1px; word-break: break-word; }
+        
+        .speaker-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 2rem;
+            color: var(--primary-green);
+            padding: 0;
+            line-height: 1;
+        }
+
+        .choices-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        
+        @media (min-width: 600px) {
+            .choices-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        .choice-btn {
+            background: var(--white);
+            border: 2px solid var(--gray-dark);
+            padding: 15px 10px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--base-font);
+        }
+
+        .choice-btn:hover { background-color: #f5f5f5; border-color: var(--primary-green); }
+        .choice-btn.wrong { background-color: #ffcdd2; border-color: var(--error-red); color: var(--error-red); animation: shake 0.3s; }
+
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+        #result-screen { display: none; }
+        .score-num { font-size: 3.5rem; color: var(--primary-green); font-weight: bold; }
+        .mistake-list { text-align: left; background: #fafafa; padding: 15px; border-radius: 10px; margin-top: 20px; max-height: 250px; overflow-y: auto; border: 1px solid var(--gray-dark); }
+        .mistake-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        
+        .action-btn { 
+            background-color: var(--primary-green); 
+            color: white; 
+            border: none; 
+            padding: 15px 40px; 
+            border-radius: 40px; 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            width: 100%; 
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>2級 2024-2 3B Bonobos</h1>
+</header>
+
+<div class="container" id="quiz-screen">
+    <div class="progress-bar">
+        <span id="current-pos">1</span> / <span id="total-count">0</span>
+    </div>
+    <div class="word-area">
+        <div class="word-display" id="word-text">Loading...</div>
+        <button class="speaker-btn" onclick="speakWord()">🔊</button>
+    </div>
+    <div class="choices-grid" id="choices-container"></div>
+    <div id="feedback" style="margin-top:20px; height: 1.2em; font-weight: bold;"></div>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>トレーニング終了！</h2>
+    <div>一度で正解：<span class="score-num" id="final-score">0</span> / <span id="result-total">0</span>問</div>
+    <div id="mistake-container" style="display:none;">
+        <h3 style="color: var(--error-red); margin-top:25px;">要復習リスト</h3>
+        <div class="mistake-list" id="mistake-list"></div>
+    </div>
+    <button class="action-btn" onclick="sendEmail()">Tamaki先生に結果を送信</button>
+    <button class="action-btn" style="background-color: var(--gray-dark);" onclick="location.reload()">もう一度挑戦する</button>
+</div>
+
+<script>
+const vocabList = [
+    {w:"look similar to", a:"似ている", c:["違っている", "隠れている", "増えている"]},
+    {w:"chimpanzees", a:"チンパンジー", c:["ゴリラ", "オランウータン", "ニホンザル"]},
+    {w:"Democratic Republic", a:"民主共和国", c:["君主制国家", "植民地", "連邦政府"]},
+    {w:"something in common", a:"共通点", c:["相違点", "問題点", "利点"]},
+    {w:"feel more connected", a:"親近感を抱く", c:["恐怖を感じる", "距離を置く", "退屈に思う"]},
+    {w:"capable of", a:"能力がある", c:["責任がある", "興味がある", "自信がある"]},
+    {w:"care about", a:"思いやる", c:["無視する", "観察する", "競争する"]},
+    {w:"not the case", a:"事実ではない", c:["正しい", "よくある", "重要だ"]},
+    {w:"in one study", a:"ある研究で", c:["ある旅行で", "ある会議で", "ある授業で"]},
+    {w:"be placed", a:"置かれる", c:["壊される", "選ばれる", "運ばれる"]},
+    {w:"separate", a:"分ける", c:["集める", "混ぜる", "壊す"]},
+    {w:"hung", a:"吊るされた", c:["埋められた", "隠された", "壊された"]},
+    {w:"reach", a:"手が届く", c:["飛び越える", "逃げ出す", "通り抜ける"]},
+    {w:"release", a:"落とす", c:["守る", "隠す", "洗う"]},
+    {w:"reward", a:"報酬", c:["罰", "命令", "義務"]},
+    {w:"surprisingly", a:"驚くべきことに", c:["当然ながら", "幸運にも", "残念ながら"]},
+    {w:"stranger", a:"見知らぬ個体", c:["家族", "天敵", "仲間"]},
+    {w:"yawn", a:"あくび", c:["くしゃみ", "ため息", "叫び声"]},
+    {w:"this suggests that", a:"示唆している", c:["否定している", "隠している", "変えている"]},
+    {w:"widespread", a:"広まっている", c:["限られている", "消えている", "隠されている"]},
+    {w:"due to", a:"～が理由で", c:["～の代わりに", "～に加えて", "～にもかかわらず"]},
+    {w:"structure", a:"構造", c:["色", "名前", "大きさ"]},
+    {w:"become clear", a:"明らかになる", c:["複雑になる", "消えていく", "役に立つ"]},
+    {w:"distinct", a:"明確な", c:["曖昧な", "一時的な", "秘密の"]},
+    {w:"power", a:"権力", c:["知識", "愛情", "平和"]},
+    {w:"take on a role", a:"役割を担う", c:["規則を破る", "場所を探す", "仲間を売る"]},
+    {w:"work together", a:"協力する", c:["戦う", "競争する", "逃げる"]},
+    {w:"make effort", a:"努力する", c:["諦める", "失敗する", "無視する"]},
+    {w:"avoid contact with", a:"接触を避ける", c:["協力を求める", "対話を促す", "世話をする"]},
+    {w:"certain area", a:"特定の地域", c:["広い世界", "未知の場所", "高い山"]},
+    {w:"require", a:"必要とする", c:["許可する", "拒絶する", "無視する"]},
+    {w:"common", a:"一般的な", c:["特別な", "珍しい", "高価な"]},
+    {w:"organize", a:"組織する", c:["破壊する", "放置する", "変更する"]},
+    {w:"tend to be", a:"～しがちだ", c:["～したくない", "～できない", "～するべきだ"]},
+    {w:"among", a:"～の間で", c:["～の外で", "～のせいで", "～の代わりに"]},
+    {w:"form", a:"形作る", c:["壊す", "分ける", "隠す"]},
+    {w:"maintain", a:"維持する", c:["変える", "捨てる", "壊す"]},
+    {w:"individuals", a:"個体", c:["集団", "家族", "種類"]},
+    {w:"conduct", a:"行う", c:["止める", "待つ", "忘れる"]},
+    {w:"peacefully", a:"平和に", c:["激しく", "残酷に", "急いで"]},
+    {w:"benefit", a:"利益になる", c:["損をする", "邪魔をする", "間違いになる"]}
+];
+
+let currentIndex = 0;
+let firstTryCorrectCount = 0;
+let isFirstTry = true;
+let mistakes = [];
+
+function loadQuestion() {
+    const current = vocabList[currentIndex];
+    document.getElementById('current-pos').textContent = currentIndex + 1;
+    document.getElementById('total-count').textContent = vocabList.length;
+    document.getElementById('word-text').textContent = current.w;
+    document.getElementById('feedback').textContent = "";
+    
+    const container = document.getElementById('choices-container');
+    container.innerHTML = '';
+    isFirstTry = true;
+
+    const choices = [current.a, ...current.c].sort(() => Math.random() - 0.5);
+
+    choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = choice;
+        btn.onclick = () => checkAnswer(choice, current.a, btn);
+        container.appendChild(btn);
+    });
+}
+
+function checkAnswer(selected, correct, btn) {
+    if (selected === correct) {
+        if (isFirstTry) {
+            firstTryCorrectCount++;
+            document.getElementById('feedback').style.color = "var(--success-green)";
+            document.getElementById('feedback').textContent = "Excellent!";
+        }
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex < vocabList.length) { loadQuestion(); } else { showResult(); }
+        }, 500);
+    } else {
+        if (isFirstTry) {
+            mistakes.push({w: vocabList[currentIndex].w, a: vocabList[currentIndex].a});
+            isFirstTry = false;
+        }
+        btn.classList.add('wrong');
+        document.getElementById('feedback').style.color = "var(--error-red)";
+        document.getElementById('feedback').textContent = "Keep trying!";
+    }
+}
+
+function speakWord() {
+    const word = vocabList[currentIndex].w;
+    const uttr = new SpeechSynthesisUtterance(word);
+    uttr.lang = 'en-US';
+    uttr.rate = 0.9;
+    window.speechSynthesis.speak(uttr);
+}
+
+function showResult() {
+    document.getElementById('quiz-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    document.getElementById('final-score').textContent = firstTryCorrectCount;
+    document.getElementById('result-total').textContent = vocabList.length;
+    if (mistakes.length > 0) {
+        document.getElementById('mistake-container').style.display = 'block';
+        document.getElementById('mistake-list').innerHTML = mistakes.map(m => `
+            <div class="mistake-item"><strong>${m.w}</strong><span>${m.a}</span></div>
+        `).join('');
+    }
+}
+
+function sendEmail() {
+    const teacherEmail = "tamaki@eigostudio-stepforward.com";
+    const subject = encodeURIComponent("2級 2024-2 3B Bonobos 結果報告");
+    let mistakeText = mistakes.length > 0 
+        ? "\n\n■要復習リスト:\n" + mistakes.map(m => `・${m.w} (${m.a})`).join("\n")
+        : "\n\n全問一発正解でした！";
+    const body = encodeURIComponent(`Tamaki先生へ\n\n英検2級 読解3B「Bonobos」の語彙クイズ（全${vocabList.length}問）を完了しました。\n\n結果: ${vocabList.length}問中 ${firstTryCorrectCount} 問を一発正解。${mistakeText}`);
+    window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+}
+
+window.onload = loadQuestion;
+</script>
+</body>
+</html>

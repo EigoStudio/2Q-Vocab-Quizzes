@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2級 2024-2 2B Satellites</title>
+    <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #fce4ec; 
+            --primary-pink: #d81b60; 
+            --text-black: #212121; 
+            --gray-dark: #616161; 
+            --white: #ffffff;
+            --error-red: #e91e63;
+            --success-green: #4caf50;
+            --base-font: 'Andika', "Hiragino Maru Gothic ProN", sans-serif;
+        }
+
+        body {
+            font-family: var(--base-font);
+            background-color: var(--bg-color);
+            color: var(--text-black);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-pink);
+            color: var(--white);
+            width: 100%;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .container {
+            max-width: 700px;
+            width: 90%;
+            margin: 20px 0;
+            background: var(--white);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 2px solid var(--gray-dark);
+        }
+
+        .progress-bar { font-size: 1rem; color: var(--primary-pink); margin-bottom: 15px; font-weight: bold; }
+        
+        .word-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .word-display { font-size: 2.2rem; font-weight: 700; color: var(--text-black); letter-spacing: 1px; word-break: break-word; }
+        
+        .speaker-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 2rem;
+            color: var(--primary-pink);
+            padding: 0;
+            line-height: 1;
+        }
+
+        .choices-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        
+        @media (min-width: 600px) {
+            .choices-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        .choice-btn {
+            background: var(--white);
+            border: 2px solid var(--gray-dark);
+            padding: 15px 10px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--base-font);
+        }
+
+        .choice-btn:hover { background-color: #f5f5f5; border-color: var(--primary-pink); }
+        .choice-btn.wrong { background-color: #ffcdd2; border-color: var(--error-red); color: var(--error-red); animation: shake 0.3s; }
+
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+        #result-screen { display: none; }
+        .score-num { font-size: 3.5rem; color: var(--primary-pink); font-weight: bold; }
+        .mistake-list { text-align: left; background: #fafafa; padding: 15px; border-radius: 10px; margin-top: 20px; max-height: 250px; overflow-y: auto; border: 1px solid var(--gray-dark); }
+        .mistake-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        
+        .action-btn { 
+            background-color: var(--primary-pink); 
+            color: white; 
+            border: none; 
+            padding: 15px 40px; 
+            border-radius: 40px; 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            width: 100%; 
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>2級 2024-2 2B Satellites</h1>
+</header>
+
+<div class="container" id="quiz-screen">
+    <div class="progress-bar" id="progress">1 / 24</div>
+    <div class="word-area">
+        <div class="word-display" id="word-text">Loading...</div>
+        <button class="speaker-btn" onclick="speakWord()">🔊</button>
+    </div>
+    <div class="choices-grid" id="choices-container"></div>
+    <div id="feedback" style="margin-top:20px; height: 1.2em; font-weight: bold;"></div>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>トレーニング終了！</h2>
+    <div>一度で正解：<span class="score-num" id="final-score">0</span> / 24問</div>
+    <div id="mistake-container" style="display:none;">
+        <h3 style="color: var(--error-red); margin-top:25px;">要復習リスト</h3>
+        <div class="mistake-list" id="mistake-list"></div>
+    </div>
+    <button class="action-btn" onclick="sendEmail()">Tamaki先生に結果を送信</button>
+    <button class="action-btn" style="background-color: var(--gray-dark);" onclick="location.reload()">もう一度挑戦する</button>
+</div>
+
+<script>
+const vocabList = [
+    {w:"satellite", a:"人工衛星", c:["気象観測", "天体望遠", "宇宙飛行"]},
+    {w:"predict", a:"予測する", c:["記録する", "変更する", "発表する"]},
+    {w:"radio wave", a:"電波", c:["音波", "光線", "磁気"]},
+    {w:"operate", a:"作動する", c:["修理する", "停止する", "建設する"]},
+    {w:"travel", a:"伝わる", c:["滞在する", "到着する", "準備する"]},
+    {w:"furthermore", a:"さらに", c:["しかし", "ゆえに", "一方で"]},
+    {w:"location", a:"位置", c:["距離", "状況", "範囲"]},
+    {w:"develop", a:"開発する", c:["破壊する", "無視する", "購入する"]},
+    {w:"demand", a:"需要", c:["供給", "拒絶", "不満"]},
+    {w:"accurate", a:"正確な", c:["最新の", "高価な", "複雑な"]},
+    {w:"broadcasting", a:"放送", c:["出版", "広告", "流通"]},
+    {w:"private companies", a:"民間企業", c:["公的機関", "慈善団体", "海外組織"]},
+    {w:"since then", a:"それ以来", c:["その時まで", "まもなく", "かつては"]},
+    {w:"occur", a:"起こる", c:["終わる", "減らす", "決める"]},
+    {w:"the number of", a:"～の数", c:["～の質", "～の順", "～の型"]},
+    {w:"object", a:"物体", c:["感情", "目的", "反対"]},
+    {w:"near oceans", a:"海の近く", c:["山の中", "空の上", "街の間"]},
+    {w:"being blocked", a:"遮られる", c:["許される", "壊される", "見られる"]},
+    {w:"at first", a:"最初は", c:["最後に", "ついに", "急いで"]},
+    {w:"in contrast", a:"対照的に", c:["同様に", "実際に", "結果的に"]},
+    {w:"in particular", a:"特に", c:["普通は", "偶然に", "突然に"]},
+    {w:"no longer", a:"もはや～ない", c:["かつて～ない", "決して～ない", "ずっと～ない"]},
+    {w:"newly", a:"新しく", c:["珍しく", "完全に", "素早く"]},
+    {w:"repair", a:"修理する", c:["交換する", "清掃する", "販売する"]}
+];
+
+let currentIndex = 0;
+let firstTryCorrectCount = 0;
+let isFirstTry = true;
+let mistakes = [];
+
+function loadQuestion() {
+    const current = vocabList[currentIndex];
+    document.getElementById('progress').textContent = `${currentIndex + 1} / ${vocabList.length}`;
+    document.getElementById('word-text').textContent = current.w;
+    document.getElementById('feedback').textContent = "";
+    
+    const container = document.getElementById('choices-container');
+    container.innerHTML = '';
+    isFirstTry = true;
+
+    const choices = [current.a, ...current.c].sort(() => Math.random() - 0.5);
+
+    choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = choice;
+        btn.onclick = () => checkAnswer(choice, current.a, btn);
+        container.appendChild(btn);
+    });
+}
+
+function checkAnswer(selected, correct, btn) {
+    if (selected === correct) {
+        if (isFirstTry) {
+            firstTryCorrectCount++;
+            document.getElementById('feedback').style.color = "var(--success-green)";
+            document.getElementById('feedback').textContent = "Excellent!";
+        }
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex < vocabList.length) { loadQuestion(); } else { showResult(); }
+        }, 500);
+    } else {
+        if (isFirstTry) {
+            mistakes.push({w: vocabList[currentIndex].w, a: vocabList[currentIndex].a});
+            isFirstTry = false;
+        }
+        btn.classList.add('wrong');
+        document.getElementById('feedback').style.color = "var(--error-red)";
+        document.getElementById('feedback').textContent = "Try again!";
+    }
+}
+
+function speakWord() {
+    const word = vocabList[currentIndex].w;
+    const uttr = new SpeechSynthesisUtterance(word);
+    uttr.lang = 'en-US';
+    uttr.rate = 0.9;
+    window.speechSynthesis.speak(uttr);
+}
+
+function showResult() {
+    document.getElementById('quiz-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    document.getElementById('final-score').textContent = firstTryCorrectCount;
+    if (mistakes.length > 0) {
+        document.getElementById('mistake-container').style.display = 'block';
+        document.getElementById('mistake-list').innerHTML = mistakes.map(m => `
+            <div class="mistake-item"><strong>${m.w}</strong><span>${m.a}</span></div>
+        `).join('');
+    }
+}
+
+function sendEmail() {
+    const teacherEmail = "tamaki@eigostudio-stepforward.com";
+    const subject = encodeURIComponent("2級 2024-2 2B Satellites 結果報告");
+    let mistakeText = mistakes.length > 0 
+        ? "\n\n■要復習リスト:\n" + mistakes.map(m => `・${m.w} (${m.a})`).join("\n")
+        : "\n\n満点でした！";
+    const body = encodeURIComponent(`Tamaki先生へ\n\n英検2級 読解2B「Satellites」の語彙クイズ（全24問）を完了しました。\n\n結果: ${vocabList.length}問中 ${firstTryCorrectCount} 問を一発正解。${mistakeText}`);
+    window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+}
+
+window.onload = loadQuestion;
+</script>
+</body>
+</html>
